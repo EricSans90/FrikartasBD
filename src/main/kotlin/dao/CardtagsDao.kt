@@ -5,32 +5,18 @@ import org.hibernate.Session
 import util.HibernateUtil
 
 class CardtagsDao {
-    fun createCardTag(cardTag: Cardtags) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
-
+    fun createCardTag(cardTag: Cardtags, session: Session) {
         session.save(cardTag)
-
-        session.transaction.commit()
-        session.close()
     }
 
-    fun getCardTagsByCardId(cardId: Int): List<Cardtags> {
-        val session: Session = HibernateUtil.getSession().openSession()
+    fun getCardTagsByCardId(cardId: Int, session: Session): List<Cardtags> {
         val query = session.createQuery("FROM Cardtags WHERE cardId = :cardId", Cardtags::class.java)
         query.setParameter("cardId", cardId)
-        val cardTags: List<Cardtags> = query.resultList
-        session.close()
-        return cardTags
+        return query.list()
     }
-    fun updateCardTag(cardTag: Cardtags) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
 
+    fun updateCardTag(cardTag: Cardtags, session: Session) {
         session.update(cardTag)
-
-        session.transaction.commit()
-        session.close()
     }
 
     fun deleteTagsByCardId(cardId: Int, session: Session) {

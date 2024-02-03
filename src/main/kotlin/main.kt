@@ -1,6 +1,7 @@
 import classes.*
 import dao.*
 import org.hibernate.Hibernate
+import org.hibernate.Session
 import util.HibernateUtil
 import java.util.logging.Level
 import java.util.logging.LogManager
@@ -21,9 +22,11 @@ fun main(args: Array<String>) {
         println("3. Crear una colección")
         println("4. Crear una carta")
         println("5. Crear tags/languages/urlImages de una carta")
-        println("6. Borrar una colección")
-        println("7. Borrar una carta")
-        println("8. Salir")
+        println("6. Modificar una colección")
+        println("7. Modificar una carta")
+        println("8. Borrar una colección")
+        println("9. Borrar una carta")
+        println("10. Salir")
 
         when (readLine()) {
             "1" -> {
@@ -47,10 +50,18 @@ fun main(args: Array<String>) {
                 println()
             }
             "6" -> {
-                DeleteCollection(collectionsDao)
+                ModificateCollection(collectionsDao)
                 println()
             }
             "7" -> {
+                ModificateCard(cardsDao, collectionsDao, cardtagsDao, cardlanguagesDao, cardimagesDao)
+                println()
+            }
+            "8" -> {
+                DeleteCollection(collectionsDao, cardsDao, cardtagsDao, cardlanguagesDao, cardimagesDao)
+                println()
+            }
+            "9" -> {
                 println("Introduce el ID de la carta a borrar:")
                 val cardId = readLine()?.toIntOrNull()
                 if (cardId != null) {
@@ -59,54 +70,260 @@ fun main(args: Array<String>) {
                     println("ID inválido.")
                 }
             }
-            "8" -> break
+            "10" -> break
             else -> println("Opción no reconocida. Intente de nuevo.")
         }
     }
 
 }
 
-private fun ConsultateCard(cardsDao: CardsDao) {
-    println("Introduce el ID de la carta que quieres consultar:")
-    val cardId = readLine()?.toIntOrNull()
-    if (cardId != null) {
-        val card = cardsDao.getCardById(cardId)
-        val cardtagsDao = CardtagsDao()
-        val cardimagesDao = CardimagesDao()
-        val cardlanguagesDao = CardlanguagesDao()
-        if (card != null) {
-            println("Información de la carta:")
-            println("ID: ${card.cardId}")
-            println("Nombre: ${card.name}")
-            // Consultar y mostrar tags
-            val tags = cardtagsDao.getCardTagsByCardId(card.cardId)
-            println("Tags:")
-            tags.forEach { tag -> println("- ${tag.tag}") }
-            println("Rareza: ${card.rarity}")
-            println("Stock: ${card.stock}")
-            println("Precio: ${card.price}")
-            println("Descuento: ${card.discount}")
-            println("SKU: ${card.sku}")
-            // Consultar y mostrar urlImages
-            val images = cardimagesDao.getCardImagesByCardId(card.cardId)
-            println("Images:")
-            images.forEach { image -> println("- ${image.urlImage}") }
-            println("Descripción: ${card.description}")
-            // Consultar y mostrar languages
-            val languages = cardlanguagesDao.getCardLanguagesByCardId(card.cardId)
-            println("Languages:")
-            languages.forEach { language -> println("- ${language.language}") }
-            println("Tamaño: ${card.size}")
-            println("Colección ID: ${card.collectionsByCollectionId?.collectionId}")
-        } else {
-            println("No se encontró una carta con ID $cardId.")
+public fun ModificateCollection(collectionsDao: CollectionsDao) {
+    println("Introduce el ID de la colección que quieres modificar:")
+    val collectionId = readLine()?.toIntOrNull()
+    if (collectionId != null) {
+        val session = HibernateUtil.getSession().openSession()
+        try {
+            val collection = collectionsDao.getCollectionById(collectionId, session)
+            if (collection != null) {
+                println("Información actual de la colección:")
+                println("Nombre: ${collection.name}")
+                println("Tipo: ${collection.collectType}")
+                println("Año de publicación: ${collection.publicationYear}")
+
+                println("Introduce el nuevo nombre de la colección (o presiona ENTER para mantener el actual):")
+                val newName = readLine()
+                if (!newName.isNullOrBlank()) {
+                    collection.name = newName
+                }
+
+                println("Introduce el nuevo tipo de la colección (o presiona ENTER para mantener el actual):")
+                val newType = readLine()
+                if (!newType.isNullOrBlank()) {
+                    collection.collectType = newType
+                }
+
+                println("Introduce el nuevo año de publicación de la colección (o presiona ENTER para mantener el actual):")
+                val newYear = readLine()?.toIntOrNull()
+                if (newYear != null) {
+                    collection.publicationYear = newYear
+                }
+
+                collectionsDao.updateCollection(collection,session)
+                println("Colección actualizada con éxito.")
+
+            } else {
+                println("No se encontró una colección con ID $collectionId.")
+            }
+        } finally {
+            session.close()
         }
     } else {
         println("ID inválido.")
     }
 }
 
-private fun ConsultateCollection(collectionsDao: CollectionsDao) {
+public fun ModificateCard(cardsDao: CardsDao, collectionsDao: CollectionsDao, cardtagsDao: CardtagsDao, cardlanguagesDao: CardlanguagesDao, cardimagesDao: CardimagesDao) {
+    println("Introduce el ID de la carta que quieres modificar:")
+    val cardId = readLine()?.toIntOrNull()
+    if (cardId != null) {
+        val session = HibernateUtil.getSession().openSession()
+        val transaction = session.beginTransaction()
+    try{
+        val card = cardsDao.getCardById(cardId,session)
+        if (card != null) {
+            println("Información actual de la carta:")
+            println("Nombre: ${card.name}")
+            println("Rareza: ${card.rarity}")
+            println("Stock: ${card.stock}")
+            println("Precio: ${card.price}")
+            println("Descuento: ${card.discount}")
+            println("SKU: ${card.sku}")
+            println("Descripción: ${card.description}")
+            println("Tamaño: ${card.size}")
+            println("ID de Colección: ${card.collectionId}")
+
+            // Actualización de Nombre
+            println("Introduce el nuevo nombre de la carta (o presiona ENTER para mantener el actual):")
+            val newName = readLine()
+            if (!newName.isNullOrBlank()) {
+                card.name = newName
+            }
+
+            // Actualización de Tags
+            println("¿Quieres modificar los tags de la carta? (si/no):")
+            if (readLine().equals("si", ignoreCase = true)) {
+                cardtagsDao.deleteTagsByCardId(card.cardId, session)  // Eliminar todos los tags existentes
+                var continuar = true
+                while (continuar) {
+                    println("Introduce un tag para la carta (o presiona ENTER para finalizar):")
+                    val tagText = readLine()
+                    if (!tagText.isNullOrBlank()) {
+                        val tag = Cardtags(card.cardId, tagText)
+                        cardtagsDao.createCardTag(tag,session)
+                    } else {
+                        continuar = false
+                    }
+                }
+            }
+
+            // Actualización de rareza
+            println("Introduce la nueva rareza de la carta (o presiona ENTER para mantener el actual):")
+            val newRarity = readLine()
+            if (!newRarity.isNullOrBlank()) {
+                card.rarity = newRarity
+            }
+
+            // Actualización de stock
+            println("Introduce el nuevo stock de la carta (o presiona ENTER para mantener el actual):")
+            val newStock = readLine()?.toIntOrNull()
+            if (newStock != null) {
+                card.stock = newStock
+            }
+
+            // Actualización de price
+            println("Introduce el nuevo precio de la carta (o presiona ENTER para mantener el actual):")
+            val newPrice = readLine()?.toDoubleOrNull()
+            if (newPrice != null) {
+                card.price = newPrice
+            }
+
+            // Actualización de discount
+            println("¿Tiene descuento la carta? (true/false, o presiona ENTER para mantener el actual):")
+            val newDiscount = readLine()?.toBoolean()
+            if (newDiscount != null) {
+                card.discount = newDiscount
+            }
+
+            // Actualización de SKU
+            println("Introduce el nuevo SKU de la carta (o presiona ENTER para mantener el actual):")
+            val newSKU = readLine()
+            if (!newSKU.isNullOrBlank()) {
+                card.sku = newSKU
+            }
+
+            // Actualización de URL de Imágenes
+            println("¿Quieres modificar las URL de las imágenes de la carta? (si/no):")
+            if (readLine().equals("si", ignoreCase = true)) {
+                cardimagesDao.deleteImagesByCardId(card.cardId, session)  // Eliminar todas las imágenes existentes
+                var continuar = true
+                while (continuar) {
+                    println("Introduce una URL de imagen para la carta (o presiona ENTER para finalizar):")
+                    val imageUrl = readLine()
+                    if (!imageUrl.isNullOrBlank()) {
+                        val image = Cardimages(card.cardId, imageUrl)
+                        cardimagesDao.createCardImage(image,session)
+                    } else {
+                        continuar = false
+                    }
+                }
+            }
+
+            // Actualización de description
+            println("Introduce la nueva descripción de la carta (o presiona ENTER para mantener el actual):")
+            val newDescription = readLine()
+            if (!newDescription.isNullOrBlank()) {
+                card.description = newDescription
+            }
+
+            // Actualización de Languages
+            println("¿Quieres modificar los idiomas de la carta? (si/no):")
+            if (readLine().equals("si", ignoreCase = true)) {
+                cardlanguagesDao.deleteLanguagesByCardId(card.cardId, session)  // Eliminar todos los idiomas existentes
+                var continuar = true
+                while (continuar) {
+                    println("Introduce un idioma para la carta (o presiona ENTER para finalizar):")
+                    val languageText = readLine()
+                    if (!languageText.isNullOrBlank()) {
+                        val language = Cardlanguages(card.cardId, languageText)
+                        cardlanguagesDao.createCardLanguage(language,session)
+                    } else {
+                        continuar = false
+                    }
+                }
+            }
+
+            // Actualización de size
+            println("Introduce el nuevo tamaño de la carta (o presiona ENTER para mantener el actual):")
+            val newSize = readLine()
+            if (!newSize.isNullOrBlank()) {
+                card.size = newSize
+            }
+
+            // Actualización de collection ID
+            println("Introduce el nuevo ID de la colección para esta carta (o presiona ENTER para mantener el actual):")
+            val newCollectionId = readLine()?.toIntOrNull()
+            if (newCollectionId != null) {
+                val newCollection = collectionsDao.getCollectionById(newCollectionId,session)
+                if (newCollection != null) {
+                    card.collectionId = newCollectionId
+                } else {
+                    println("No se encontró una colección con ID $newCollectionId.")
+                }
+            }
+
+            cardsDao.updateCard(card, session)
+            transaction.commit()
+            println("Carta actualizada con éxito.")
+
+        } else {
+            println("No se encontró una carta con ID $cardId.")
+        }
+    } catch (e: Exception) {
+            transaction.rollback()
+            println("Transacción revertida debido a un error. ${e.message}")
+        } finally {
+            session.close()
+        }
+    } else {
+        println("ID inválido.")
+    }
+}
+public fun ConsultateCard(cardsDao: CardsDao) {
+    println("Introduce el ID de la carta que quieres consultar:")
+    val cardId = readLine()?.toIntOrNull()
+    if (cardId != null) {
+        val session = HibernateUtil.getSession().openSession()
+        try{
+            val card = cardsDao.getCardById(cardId, session)
+            val cardtagsDao = CardtagsDao()
+            val cardimagesDao = CardimagesDao()
+            val cardlanguagesDao = CardlanguagesDao()
+            if (card != null) {
+                println("Información de la carta:")
+                println("ID: ${card.cardId}")
+                println("Nombre: ${card.name}")
+                // Consultar y mostrar tags
+                val tags = cardtagsDao.getCardTagsByCardId(card.cardId,session)
+                println("Tags:")
+                tags.forEach { tag -> println("- ${tag.tag}") }
+                println("Rareza: ${card.rarity}")
+                println("Stock: ${card.stock}")
+                println("Precio: ${card.price}")
+                println("Descuento: ${card.discount}")
+                println("SKU: ${card.sku}")
+                // Consultar y mostrar urlImages
+                val images = cardimagesDao.getCardImagesByCardId(card.cardId,session)
+                println("Images:")
+                images.forEach { image -> println("- ${image.urlImage}") }
+                println("Descripción: ${card.description}")
+                // Consultar y mostrar languages
+                val languages = cardlanguagesDao.getCardLanguagesByCardId(card.cardId,session)
+                println("Languages:")
+                languages.forEach { language -> println("- ${language.language}") }
+                println("Tamaño: ${card.size}")
+                println("Colección ID: ${card.collectionsByCollectionId?.collectionId}")
+            } else {
+                println("No se encontró una carta con ID $cardId.")
+            }
+        } finally {
+            session.close()
+        }
+    } else {
+        println("ID inválido.")
+    }
+}
+
+public fun ConsultateCollection(collectionsDao: CollectionsDao) {
     println("Introduce el ID de la colección que quieres consultar:")
     val collectionId = readLine()?.toIntOrNull()
     if (collectionId != null) {
@@ -135,19 +352,39 @@ private fun ConsultateCollection(collectionsDao: CollectionsDao) {
     }
 }
 
-private fun DeleteCollection(collectionsDao: CollectionsDao) {
+public fun DeleteCollection(collectionsDao: CollectionsDao, cardsDao: CardsDao, cardtagsDao: CardtagsDao, cardlanguagesDao: CardlanguagesDao, cardimagesDao: CardimagesDao) {
     println("Introduce el ID de la colección a borrar:")
     val collectionId = readLine()?.toIntOrNull()
     if (collectionId != null) {
         val session = HibernateUtil.getSession().openSession()
+        val transaction = session.beginTransaction()
         try {
             val collection = collectionsDao.getCollectionById(collectionId, session)
             if (collection != null) {
-                collectionsDao.deleteCollection(collectionId, session)
-                println("Colección con ID $collectionId borrada con éxito.")
+                // Primero, eliminar todas las cartas de la colección
+                val cards = cardsDao.getCardsByCollectionId(collectionId, session)
+                for (card in cards) {
+                    // Eliminar todas las referencias de la carta
+                    cardtagsDao.deleteTagsByCardId(card.cardId, session)
+                    cardlanguagesDao.deleteLanguagesByCardId(card.cardId, session)
+                    cardimagesDao.deleteImagesByCardId(card.cardId, session)
+                    // Luego, eliminar la carta
+                    session.delete(card)
+                }
+
+                // Luego, eliminar la colección
+                session.delete(collection)
+
+                transaction.commit()
+                println("Colección con ID $collectionId y todas sus cartas asociadas borradas con éxito.")
             } else {
                 println("No se encontró una colección con ID $collectionId.")
+                transaction.rollback()
             }
+        } catch (e: Exception) {
+            transaction.rollback()
+            println("Transacción revertida debido a un error. ${e.message}")
+            e.printStackTrace()
         } finally {
             session.close()
         }
@@ -156,7 +393,7 @@ private fun DeleteCollection(collectionsDao: CollectionsDao) {
     }
 }
 
-private fun DeleteCard(cardsDao: CardsDao, cardtagsDao: CardtagsDao, cardlanguagesDao: CardlanguagesDao, cardimagesDao: CardimagesDao, cardId: Int) {
+public fun DeleteCard(cardsDao: CardsDao, cardtagsDao: CardtagsDao, cardlanguagesDao: CardlanguagesDao, cardimagesDao: CardimagesDao, cardId: Int) {
     val session = HibernateUtil.getSession().openSession()
     val transaction = session.beginTransaction()
 
@@ -172,22 +409,33 @@ private fun DeleteCard(cardsDao: CardsDao, cardtagsDao: CardtagsDao, cardlanguag
     }
 }
 
-private fun CreateTagsLanguagesImages(cardsDao: CardsDao) {
+public fun CreateTagsLanguagesImages(cardsDao: CardsDao) {
     println("Introduce el ID de la carta a la que quieres añadir tags/languages/urlImages:")
     val cardId = readLine()?.toIntOrNull()
     if (cardId != null) {
-        val card = cardsDao.getCardById(cardId)
-        if (card != null) {
-            addExtraToCard(card)
-        } else {
-            println("No se encontró una carta con ID $cardId.")
+        val session = HibernateUtil.getSession().openSession()
+        val transaction = session.beginTransaction()
+        try {
+            val card = cardsDao.getCardById(cardId, session)
+            if (card != null) {
+                addExtraToCard(card, session)
+                transaction.commit()  // Hacer commit de la transacción
+                println("Tags/languages/urlImages añadidos con éxito.")
+            } else {
+                println("No se encontró una carta con ID $cardId.")
+            }
+        } catch (e: Exception) {
+            transaction.rollback()  // Hacer rollback en caso de error
+            println("Transacción revertida debido a un error.")
+        } finally {
+            session.close()
         }
     } else {
         println("ID inválido.")
     }
 }
 
-private fun CreateCard(collectionsDao: CollectionsDao, cardsDao: CardsDao) {
+public fun CreateCard(collectionsDao: CollectionsDao, cardsDao: CardsDao) {
     println("Introduce el nombre de la carta:")
     val name = readLine()
     println("Introduce la rareza de la carta:")
@@ -209,32 +457,39 @@ private fun CreateCard(collectionsDao: CollectionsDao, cardsDao: CardsDao) {
     val collectionId = readLine()?.toIntOrNull()
     if (name != null && rarity != null && stock != null && price != null && discount != null && sku != null && description != null && size != null && collectionId != null) {
         val session = HibernateUtil.getSession().openSession()
+        val transaction = session.beginTransaction()
         try {
             val collection = collectionsDao.getCollectionById(collectionId, session)
             if (collection != null) {
                 val card = Cards()
-            card.setName(name)
-            card.setRarity(rarity)
-            card.setStock(stock)
-            card.setPrice(price)
-            card.setDiscount(discount)
-            card.setSku(sku)
-            card.setDescription(description)
-            card.setSize(size)
-            card.setCollectionsByCollectionId(collection)
+                card.setName(name)
+                card.setRarity(rarity)
+                card.setStock(stock)
+                card.setPrice(price)
+                card.setDiscount(discount)
+                card.setSku(sku)
+                card.setDescription(description)
+                card.setSize(size)
+                card.setCollectionsByCollectionId(collection)
 
-            cardsDao.createCard(card)
+                cardsDao.createCard(card, session)
 
-            // Opción para añadir tags/languages/urlImages
-            println("¿Quieres añadir tags/languages/urlImages a la carta? (si/no):")
-            val addExtra = readLine()
-            if (addExtra.equals("si", ignoreCase = true)) {
-                // Llamar a la función para añadir tags/languages/urlImages
-                addExtraToCard(card)
-            }
+                // Opción para añadir tags/languages/urlImages
+                println("¿Quieres añadir tags/languages/urlImages a la carta? (si/no):")
+                val addExtra = readLine()
+                if (addExtra.equals("si", ignoreCase = true)) {
+                    addExtraToCard(card, session)  // Asegúrate de que esta función usa la sesión que se pasa
+                }
+
+                transaction.commit()
+                println("Carta creada con éxito.")
             } else {
                 println("La colección con ID $collectionId no existe.")
+                transaction.rollback()
             }
+        } catch (e: Exception) {
+            transaction.rollback()
+            println("Error al crear la carta: ${e.message}")
         } finally {
             session.close()
         }
@@ -243,7 +498,7 @@ private fun CreateCard(collectionsDao: CollectionsDao, cardsDao: CardsDao) {
     }
 }
 
-fun addExtraToCard(card: Cards) {
+fun addExtraToCard(card: Cards, session: Session) {
     val cardtagsDao = CardtagsDao()
     var continuar = true
     while (continuar) {
@@ -254,7 +509,7 @@ fun addExtraToCard(card: Cards) {
             val tagText = readLine()
             if (!tagText.isNullOrBlank()) {
                 val tag = Cardtags(card.cardId, tagText)
-                cardtagsDao.createCardTag(tag)
+                cardtagsDao.createCardTag(tag,session)
             }
         } else {
             continuar = false
@@ -272,7 +527,7 @@ fun addExtraToCard(card: Cards) {
             val languageText = readLine()
             if (!languageText.isNullOrBlank()) {
                 val language = Cardlanguages(card.cardId, languageText)
-                cardlanguagesDao.createCardLanguage(language)
+                cardlanguagesDao.createCardLanguage(language,session)
             }
         } else {
             continuar = false
@@ -290,7 +545,7 @@ fun addExtraToCard(card: Cards) {
             val imageUrl = readLine()
             if (!imageUrl.isNullOrBlank()) {
                 val image = Cardimages(card.cardId, imageUrl)
-                cardimagesDao.createCardImage(image)
+                cardimagesDao.createCardImage(image,session)
             }
         } else {
             continuar = false
@@ -299,7 +554,7 @@ fun addExtraToCard(card: Cards) {
 }
 
 
-private fun CreateCollection(collectionsDao: CollectionsDao) {
+public fun CreateCollection(collectionsDao: CollectionsDao) {
     println("Introduce el nombre de la colección:")
     val name = readLine()
     println("Introduce el tipo de la colección:")
@@ -307,7 +562,18 @@ private fun CreateCollection(collectionsDao: CollectionsDao) {
     println("Introduce el año de publicación de la colección:")
     val year = readLine()?.toIntOrNull()
     if (name != null && type != null && year != null) {
-        collectionsDao.createCollection(Collections(name, type, year))
+        val session = HibernateUtil.getSession().openSession()
+        val transaction = session.beginTransaction()
+        try {
+            collectionsDao.createCollection(Collections(name, type, year), session)
+            transaction.commit()
+            println("Colección creada con éxito.")
+        } catch (e: Exception) {
+            transaction.rollback()
+            println("Error al crear la colección: ${e.message}")
+        } finally {
+            session.close()
+        }
     } else {
         println("Datos inválidos.")
     }

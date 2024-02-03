@@ -5,34 +5,20 @@ import org.hibernate.Session
 import util.HibernateUtil
 
 class CardimagesDao {
-    fun createCardImage(cardImage: Cardimages) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
-
+    fun createCardImage(cardImage: Cardimages, session: Session) {
         session.save(cardImage)
-
-        session.transaction.commit()
-        session.close()
     }
 
-    fun getCardImagesByCardId(cardId: Int): List<Cardimages> {
-        val session: Session = HibernateUtil.getSession().openSession()
+    fun getCardImagesByCardId(cardId: Int, session: Session): List<Cardimages> {
         val query = session.createQuery("FROM Cardimages WHERE cardId = :cardId", Cardimages::class.java)
         query.setParameter("cardId", cardId)
-        val cardImages = query.list()
-        session.close()
-        return cardImages
+        return query.list()
     }
 
-    fun updateCardImage(cardImage: Cardimages) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
-
+    fun updateCardImage(cardImage: Cardimages, session: Session) {
         session.update(cardImage)
-
-        session.transaction.commit()
-        session.close()
     }
+
 
     fun deleteImagesByCardId(cardId: Int, session: Session) {
         val images = session.createQuery("FROM Cardimages WHERE cardId = :cardId", Cardimages::class.java)

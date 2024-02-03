@@ -5,33 +5,18 @@ import org.hibernate.Session
 import util.HibernateUtil
 
 class CardlanguagesDao {
-    fun createCardLanguage(cardLanguage: Cardlanguages) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
-
+    fun createCardLanguage(cardLanguage: Cardlanguages, session: Session) {
         session.save(cardLanguage)
-
-        session.transaction.commit()
-        session.close()
     }
 
-    fun getCardLanguagesByCardId(cardId: Int): List<Cardlanguages> {
-        val session: Session = HibernateUtil.getSession().openSession()
+    fun getCardLanguagesByCardId(cardId: Int, session: Session): List<Cardlanguages> {
         val query = session.createQuery("FROM Cardlanguages WHERE cardId = :cardId", Cardlanguages::class.java)
         query.setParameter("cardId", cardId)
-        val cardLanguages = query.list()
-        session.close()
-        return cardLanguages
+        return query.list()
     }
 
-    fun updateCardLanguage(cardLanguage: Cardlanguages) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
-
+    fun updateCardLanguage(cardLanguage: Cardlanguages, session: Session) {
         session.update(cardLanguage)
-
-        session.transaction.commit()
-        session.close()
     }
 
     fun deleteLanguagesByCardId(cardId: Int, session: Session) {
