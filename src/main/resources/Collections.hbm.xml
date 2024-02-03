@@ -5,7 +5,13 @@
 <hibernate-mapping>
 
     <class name="classes.Collections" table="collections" schema="public" catalog="frikartas">
-        <id name="collectionId" column="collection_id"/>
+        <id name="collectionId" column="collection_id" type="int">
+            <generator class="org.hibernate.id.enhanced.SequenceStyleGenerator">
+                <param name="optimizer">none</param>
+                <param name="increment_size">1</param>
+                <param name="sequence_name">public.collections_collection_id_seq</param>
+            </generator>
+        </id>
         <property name="name" column="name"/>
         <property name="collectType" column="collect_type"/>
         <property name="publicationYear" column="publication_year"/>
