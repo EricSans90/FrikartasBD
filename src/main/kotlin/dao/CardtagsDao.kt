@@ -33,16 +33,12 @@ class CardtagsDao {
         session.close()
     }
 
-    fun deleteCardTag(cardTagId: Int) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
-
-        val cardTag: Cardtags? = session.get(Cardtags::class.java, cardTagId)
-        if (cardTag != null) {
-            session.delete(cardTag)
+    fun deleteTagsByCardId(cardId: Int, session: Session) {
+        val tags = session.createQuery("FROM Cardtags WHERE cardId = :cardId", Cardtags::class.java)
+            .setParameter("cardId", cardId)
+            .list()
+        for (tag in tags) {
+            session.delete(tag)
         }
-
-        session.transaction.commit()
-        session.close()
     }
 }

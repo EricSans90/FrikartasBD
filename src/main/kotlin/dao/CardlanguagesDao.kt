@@ -34,16 +34,12 @@ class CardlanguagesDao {
         session.close()
     }
 
-    fun deleteCardLanguage(cardLanguageId: Int) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
-
-        val cardLanguage: Cardlanguages? = session.get(Cardlanguages::class.java, cardLanguageId)
-        if (cardLanguage != null) {
-            session.delete(cardLanguage)
+    fun deleteLanguagesByCardId(cardId: Int, session: Session) {
+        val languages = session.createQuery("FROM Cardlanguages WHERE cardId = :cardId", Cardlanguages::class.java)
+            .setParameter("cardId", cardId)
+            .list()
+        for (language in languages) {
+            session.delete(language)
         }
-
-        session.transaction.commit()
-        session.close()
     }
 }

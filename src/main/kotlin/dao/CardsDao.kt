@@ -32,22 +32,23 @@ class CardsDao {
         session.close()
     }
 
-    fun deleteCard(cardId: Int) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
+    fun deleteCard(cardId: Int, cardtagsDao: CardtagsDao, cardlanguagesDao: CardlanguagesDao, cardimagesDao: CardimagesDao, session: Session) {
+        try {
+            // Primero, eliminar todas las referencias de la carta
+            cardtagsDao.deleteTagsByCardId(cardId, session)
+            cardlanguagesDao.deleteLanguagesByCardId(cardId, session)
+            cardimagesDao.deleteImagesByCardId(cardId, session)
 
-        try{
+            // Luego, eliminar la carta
             val card: Cards? = session.get(Cards::class.java, cardId)
             if (card != null) {
                 session.delete(card)
             }
 
-            session.transaction.commit()
-
+            println("La carta con ID $cardId ha sido eliminada con éxito.")
         } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            session.close()
+            println("Error al eliminar la carta: ${e.message}")
+            throw e
         }
     }
 

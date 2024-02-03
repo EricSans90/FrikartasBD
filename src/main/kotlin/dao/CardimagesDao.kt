@@ -34,16 +34,12 @@ class CardimagesDao {
         session.close()
     }
 
-    fun deleteCardImage(cardImageId: Int) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
-
-        val cardImage: Cardimages? = session.get(Cardimages::class.java, cardImageId)
-        if (cardImage != null) {
-            session.delete(cardImage)
+    fun deleteImagesByCardId(cardId: Int, session: Session) {
+        val images = session.createQuery("FROM Cardimages WHERE cardId = :cardId", Cardimages::class.java)
+            .setParameter("cardId", cardId)
+            .list()
+        for (image in images) {
+            session.delete(image)
         }
-
-        session.transaction.commit()
-        session.close()
     }
 }

@@ -10,6 +10,9 @@ fun main(args: Array<String>) {
     LogManager.getLogManager().getLogger("").setLevel(Level.SEVERE)
     val collectionsDao = CollectionsDao()
     val cardsDao = CardsDao()
+    val cardtagsDao = CardtagsDao()
+    val cardlanguagesDao = CardlanguagesDao()
+    val cardimagesDao = CardimagesDao()
 
     while (true) {
         println("Elige una opción:")
@@ -44,14 +47,17 @@ fun main(args: Array<String>) {
                 println()
             }
             "6" -> {
-                println("Introduce el ID de la colección a borrar:")
                 DeleteCollection(collectionsDao)
                 println()
             }
             "7" -> {
                 println("Introduce el ID de la carta a borrar:")
-                DeleteCard(cardsDao)
-                println()
+                val cardId = readLine()?.toIntOrNull()
+                if (cardId != null) {
+                    DeleteCard(cardsDao, cardtagsDao, cardlanguagesDao, cardimagesDao, cardId)
+                } else {
+                    println("ID inválido.")
+                }
             }
             "8" -> break
             else -> println("Opción no reconocida. Intente de nuevo.")
@@ -150,12 +156,19 @@ private fun DeleteCollection(collectionsDao: CollectionsDao) {
     }
 }
 
-private fun DeleteCard(cardsDao: CardsDao) {
-    val cardId = readLine()?.toIntOrNull()
-    if (cardId != null) {
-        cardsDao.deleteCard(cardId)
-    } else {
-        println("ID inválido.")
+private fun DeleteCard(cardsDao: CardsDao, cardtagsDao: CardtagsDao, cardlanguagesDao: CardlanguagesDao, cardimagesDao: CardimagesDao, cardId: Int) {
+    val session = HibernateUtil.getSession().openSession()
+    val transaction = session.beginTransaction()
+
+    try {
+        cardsDao.deleteCard(cardId, cardtagsDao, cardlanguagesDao, cardimagesDao, session)
+
+        transaction.commit()
+    } catch (e: Exception) {
+        transaction.rollback()
+        println("Transacción revertida debido a un error.")
+    } finally {
+        session.close()
     }
 }
 
@@ -231,42 +244,56 @@ private fun CreateCard(collectionsDao: CollectionsDao, cardsDao: CardsDao) {
 }
 
 fun addExtraToCard(card: Cards) {
-    // Añadir tags
     val cardtagsDao = CardtagsDao()
-    println("¿Quieres añadir un tag a la carta? (si/no):")
-    val addTag = readLine()
-    if (addTag.equals("si", ignoreCase = true)) {
-        println("Introduce el tag para la carta:")
-        val tagText = readLine()
-        if (!tagText.isNullOrBlank()) {
-            val tag = Cardtags(card.cardId,tagText)
-            cardtagsDao.createCardTag(tag)
+    var continuar = true
+    while (continuar) {
+        println("¿Quieres añadir un tag a la carta? (si/no):")
+        val addTag = readLine()
+        if (addTag.equals("si", ignoreCase = true)) {
+            println("Introduce el tag para la carta:")
+            val tagText = readLine()
+            if (!tagText.isNullOrBlank()) {
+                val tag = Cardtags(card.cardId, tagText)
+                cardtagsDao.createCardTag(tag)
+            }
+        } else {
+            continuar = false
         }
     }
 
     // Añadir languages
     val cardlanguagesDao = CardlanguagesDao()
-    println("¿Quieres añadir un language a la carta? (si/no):")
-    val addLanguage = readLine()
-    if (addLanguage.equals("si", ignoreCase = true)) {
-        println("Introduce el idioma para la carta:")
-        val languageText = readLine()
-        if (!languageText.isNullOrBlank()) {
-            val language = Cardlanguages(card.cardId,languageText)
-            cardlanguagesDao.createCardLanguage(language)
+    continuar = true
+    while (continuar) {
+        println("¿Quieres añadir un language a la carta? (si/no):")
+        val addLanguage = readLine()
+        if (addLanguage.equals("si", ignoreCase = true)) {
+            println("Introduce el idioma para la carta:")
+            val languageText = readLine()
+            if (!languageText.isNullOrBlank()) {
+                val language = Cardlanguages(card.cardId, languageText)
+                cardlanguagesDao.createCardLanguage(language)
+            }
+        } else {
+            continuar = false
         }
     }
 
     // Añadir urlImages
     val cardimagesDao = CardimagesDao()
-    println("¿Quieres añadir una imagen a la carta? (si/no):")
-    val addImage = readLine()
-    if (addImage.equals("si", ignoreCase = true)) {
-        println("Introduce la URL de la imagen para la carta:")
-        val imageUrl = readLine()
-        if (!imageUrl.isNullOrBlank()) {
-            val image = Cardimages(card.cardId, imageUrl)
-            cardimagesDao.createCardImage(image)
+    continuar = true
+    while (continuar) {
+        println("¿Quieres añadir una imagen a la carta? (si/no):")
+        val addImage = readLine()
+        if (addImage.equals("si", ignoreCase = true)) {
+            println("Introduce la URL de la imagen para la carta:")
+            val imageUrl = readLine()
+            if (!imageUrl.isNullOrBlank()) {
+                val image = Cardimages(card.cardId, imageUrl)
+                cardimagesDao.createCardImage(image)
+            }
+        } else {
+            continuar = false
         }
     }
 }
