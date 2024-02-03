@@ -36,12 +36,19 @@ class CardsDao {
         val session: Session = HibernateUtil.getSession().openSession()
         session.beginTransaction()
 
-        val card: Cards? = session.get(Cards::class.java, cardId)
-        if (card != null) {
-            session.delete(card)
-        }
+        try{
+            val card: Cards? = session.get(Cards::class.java, cardId)
+            if (card != null) {
+                session.delete(card)
+            }
 
-        session.transaction.commit()
-        session.close()
+            session.transaction.commit()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            session.close()
+        }
     }
+
 }

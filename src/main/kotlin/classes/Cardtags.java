@@ -5,6 +5,15 @@ public class Cardtags {
     private int cardId;
     private String tag;
 
+    public Cardtags(int cardId, String tag) {
+        this.cardId = cardId;
+        this.tag = tag;
+    }
+
+    public Cardtags() {
+
+    }
+
     public int getCardTagId() {
         return cardTagId;
     }

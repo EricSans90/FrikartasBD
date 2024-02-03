@@ -15,11 +15,13 @@ class CardimagesDao {
         session.close()
     }
 
-    fun getCardImageById(cardImageId: Int): Cardimages? {
+    fun getCardImagesByCardId(cardId: Int): List<Cardimages> {
         val session: Session = HibernateUtil.getSession().openSession()
-        val cardImage: Cardimages? = session.get(Cardimages::class.java, cardImageId)
+        val query = session.createQuery("FROM Cardimages WHERE cardId = :cardId", Cardimages::class.java)
+        query.setParameter("cardId", cardId)
+        val cardImages = query.list()
         session.close()
-        return cardImage
+        return cardImages
     }
 
     fun updateCardImage(cardImage: Cardimages) {

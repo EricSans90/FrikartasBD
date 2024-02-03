@@ -5,6 +5,15 @@ public class Cardimages {
     private int cardId;
     private String urlImage;
 
+    public Cardimages(int cardId, String urlImage) {
+        this.cardId = cardId;
+        this.urlImage = urlImage;
+    }
+
+    public Cardimages() {
+
+    }
+
     public int getCardImageId() {
         return cardImageId;
     }

@@ -15,10 +15,8 @@ class CollectionsDao {
         session.close()
     }
 
-    fun getCollectionById(collectionId: Int): Collections? {
-        val session: Session = HibernateUtil.getSession().openSession()
+    fun getCollectionById(collectionId: Int, session: Session): Collections? {
         val collection: Collections? = session.get(Collections::class.java, collectionId)
-        session.close()
         return collection
     }
 
@@ -32,16 +30,17 @@ class CollectionsDao {
         session.close()
     }
 
-    fun deleteCollection(collectionId: Int) {
-        val session: Session = HibernateUtil.getSession().openSession()
-        session.beginTransaction()
-
-        val collection: Collections? = session.get(Collections::class.java, collectionId)
-        if (collection != null) {
-            session.delete(collection)
+    fun deleteCollection(collectionId: Int, session: Session) {
+        val transaction = session.beginTransaction()
+        try {
+            val collection: Collections? = session.get(Collections::class.java, collectionId)
+            if (collection != null) {
+                session.delete(collection)
+            }
+            transaction.commit()
+        } catch (e: Exception) {
+            transaction.rollback()
+            throw e
         }
-
-        session.transaction.commit()
-        session.close()
     }
 }

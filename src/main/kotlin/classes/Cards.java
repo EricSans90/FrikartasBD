@@ -13,6 +13,7 @@ public class Cards {
     private Integer collectionId;
     private Collections collectionsByCollectionId;
 
+
     public int getCardId() {
         return cardId;
     }

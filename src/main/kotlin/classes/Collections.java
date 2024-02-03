@@ -9,6 +9,16 @@ public class Collections {
     private Integer publicationYear;
     private Collection<Cards> cardsByCollectionId;
 
+    public Collections(String name, String collectType, Integer publicationYear) {
+        this.name = name;
+        this.collectType = collectType;
+        this.publicationYear = publicationYear;
+    }
+
+    public Collections() {
+
+    }
+
     public int getCollectionId() {
         return collectionId;
     }

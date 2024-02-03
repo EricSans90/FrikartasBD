@@ -5,6 +5,15 @@ public class Cardlanguages {
     private int cardId;
     private String language;
 
+    public Cardlanguages(int cardId, String language) {
+        this.cardId = cardId;
+        this.language = language;
+    }
+
+    public Cardlanguages() {
+
+    }
+
     public int getCardLanguageId() {
         return cardLanguageId;
     }

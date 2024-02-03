@@ -15,11 +15,13 @@ class CardlanguagesDao {
         session.close()
     }
 
-    fun getCardLanguageById(cardLanguageId: Int): Cardlanguages? {
+    fun getCardLanguagesByCardId(cardId: Int): List<Cardlanguages> {
         val session: Session = HibernateUtil.getSession().openSession()
-        val cardLanguage: Cardlanguages? = session.get(Cardlanguages::class.java, cardLanguageId)
+        val query = session.createQuery("FROM Cardlanguages WHERE cardId = :cardId", Cardlanguages::class.java)
+        query.setParameter("cardId", cardId)
+        val cardLanguages = query.list()
         session.close()
-        return cardLanguage
+        return cardLanguages
     }
 
     fun updateCardLanguage(cardLanguage: Cardlanguages) {

@@ -15,13 +15,14 @@ class CardtagsDao {
         session.close()
     }
 
-    fun getCardTagById(cardTagId: Int): Cardtags? {
+    fun getCardTagsByCardId(cardId: Int): List<Cardtags> {
         val session: Session = HibernateUtil.getSession().openSession()
-        val cardTag: Cardtags? = session.get(Cardtags::class.java, cardTagId)
+        val query = session.createQuery("FROM Cardtags WHERE cardId = :cardId", Cardtags::class.java)
+        query.setParameter("cardId", cardId)
+        val cardTags: List<Cardtags> = query.resultList
         session.close()
-        return cardTag
+        return cardTags
     }
-
     fun updateCardTag(cardTag: Cardtags) {
         val session: Session = HibernateUtil.getSession().openSession()
         session.beginTransaction()
